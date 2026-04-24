@@ -37,6 +37,7 @@ class SmaApiClient:
         proto = "https" if use_https else "http"
         self._base_url = f"{proto}://{host}"
 
+        ssl_context: ssl.SSLContext | None
         if not verify_ssl and use_https:
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             ssl_context.check_hostname = False
@@ -69,7 +70,8 @@ class SmaApiClient:
 
     async def read_measurement(self) -> dict[str, Any]:
         """Read measurement data from the SMA."""
-        return await self._get_json(API_ENDPOINT_MEASUREMENT)
+        data: dict[str, Any] = await self._get_json(API_ENDPOINT_MEASUREMENT)
+        return data
 
     async def read_status(self) -> dict[str, str]:
         """Read status info (firmware, serial, etc.)."""

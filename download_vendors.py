@@ -16,7 +16,7 @@ def get_latest_github_release(repo: str) -> str:
     try:
         with urllib.request.urlopen(req, timeout=30) as response:
             data = json.loads(response.read().decode())
-            return data["tag_name"].lstrip("v")
+            return str(data["tag_name"]).lstrip("v")
     except urllib.error.HTTPError as e:
         if e.code == 403:
             raise RuntimeError(
