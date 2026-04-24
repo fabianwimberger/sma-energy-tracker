@@ -1,0 +1,21 @@
+services:
+  app:
+    image: ghcr.io/fabianwimberger/sma-energy-tracker:latest
+    container_name: sma-energy-tracker
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - sma_energy_data:/app/data
+    environment:
+      TZ: ${TZ:-Europe/Vienna}
+      DATA_DIR: /app/data
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      SMA_HOST: ${SMA_HOST}
+      SMA_TOKEN: ${SMA_TOKEN}
+      SMA_USE_HTTPS: ${SMA_USE_HTTPS:-true}
+      SMA_VERIFY_SSL: ${SMA_VERIFY_SSL:-false}
+      SMA_POLL_INTERVAL: ${SMA_POLL_INTERVAL:-30}
+
+volumes:
+  sma_energy_data:

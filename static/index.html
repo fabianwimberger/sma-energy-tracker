@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="SMA Energy consumption analytics dashboard">
+    <title>SMA Energy Tracker</title>
+    <link rel="stylesheet" href="/static/vendor/flatpickr.min.css">
+    <link rel="stylesheet" href="/static/vendor/dark.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="header-title">
+                <span class="header-icon">⚡</span>
+                <span>SMA Energy Tracker</span>
+            </h1>
+            <div class="status-badge">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span class="status-text">Loading...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Chart Area -->
+            <div class="content">
+                <div class="card">
+                    <div class="chart-container">
+                        <canvas id="main-chart" role="img" aria-label="Energy consumption chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Controls -->
+            <aside class="sidebar">
+                <!-- View Controls -->
+                <section class="sidebar-section">
+                    <h3 class="section-title">View Options</h3>
+
+                    <div class="control-group">
+                        <label class="control-label">Aggregation</label>
+                        <div class="radio-grid">
+                            <div class="radio-option">
+                                <input type="radio" id="agg-raw" name="aggregation" value="raw">
+                                <label for="agg-raw" class="radio-label">Raw</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="agg-daily" name="aggregation" value="daily" checked>
+                                <label for="agg-daily" class="radio-label">Daily</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="agg-weekly" name="aggregation" value="weekly">
+                                <label for="agg-weekly" class="radio-label">Weekly</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="agg-monthly" name="aggregation" value="monthly">
+                                <label for="agg-monthly" class="radio-label">Monthly</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="agg-yearly" name="aggregation" value="yearly">
+                                <label for="agg-yearly" class="radio-label">Yearly</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="date-picker-container" class="control-group hidden">
+                        <label for="date-picker" class="control-label">Select Date</label>
+                        <input type="text" id="date-picker" class="date-input" placeholder="Choose date..." aria-label="Date selector">
+                    </div>
+                </section>
+
+                <!-- SMA Status -->
+                <section class="sidebar-section">
+                    <h3 class="section-title">SMA Status</h3>
+                    <div id="sma-status" class="sma-status-panel">
+                        <div class="status-row">
+                            <span class="status-label">Connection</span>
+                            <span class="status-value" id="sma-connection">—</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Last Poll</span>
+                            <span class="status-value" id="sma-last-poll">—</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Readings</span>
+                            <span class="status-value" id="sma-readings">—</span>
+                        </div>
+                    </div>
+                    <div id="sma-error" class="status-list" role="status" aria-live="polite"></div>
+                </section>
+            </aside>
+        </main>
+    </div>
+
+    <script src="/static/vendor/chart.min.js"></script>
+    <script src="/static/vendor/chartjs-plugin-zoom.min.js"></script>
+    <script src="/static/vendor/flatpickr.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>
