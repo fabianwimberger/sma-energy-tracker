@@ -11,4 +11,4 @@ sqlalchemy==2.0.40
 httpx==0.28.1
 
 # File handling
-aiofiles==24.1.0
+aiofiles==25.1.0
