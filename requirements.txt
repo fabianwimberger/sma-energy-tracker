@@ -4,7 +4,7 @@ uvicorn[standard]==0.34.2
 pydantic==2.11.3
 
 # Database (Async)
-aiosqlite==0.21.0
+aiosqlite==0.22.1
 sqlalchemy==2.0.40
 
 # HTTP client for SMA API
