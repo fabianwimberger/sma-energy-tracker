@@ -162,8 +162,8 @@ async def get_chart_data(
                 )
 
             daily_query = """
-                SELECT strftime('%H:%M', reading_time) as label,
-                       power_sum_w as value,
+                SELECT strftime('%H:%M:%S', reading_time) as label,
+                       COALESCE(power_sum_w, power_import_w) as value,
                        power_import_w as import_value
                 FROM sma_readings
                 WHERE DATE(reading_time) = :day
@@ -187,7 +187,7 @@ async def get_chart_data(
             return ChartData(
                 labels=[row["label"] for row in daily_rows],
                 data=[float(row["value"]) if row["value"] is not None else 0 for row in daily_rows],
-                daily_average_pattern=[pattern_map.get(row["label"], 0) for row in daily_rows],
+                daily_average_pattern=[pattern_map.get(row["label"][:5], 0) for row in daily_rows],
             )
 
         elif aggregation == "daily":

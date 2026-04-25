@@ -9,8 +9,8 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-API_ENDPOINT_MEASUREMENT = "/api/data/measurement.json"
-API_ENDPOINT_STATUS = "/api/sma/status.json"
+API_ENDPOINT_MEASUREMENT = "/api/v1/measurement"
+API_ENDPOINT_STATUS = "/api/v1/status"
 TIMEOUT_READ = 15.0
 
 
@@ -55,7 +55,7 @@ class SmaApiClient:
         return self._host
 
     def _headers(self) -> dict[str, str]:
-        return {"AuthorizationToken": self._token}
+        return {"Authorization": f"TOKEN {self._token}"}
 
     async def close(self) -> None:
         await self._client.aclose()
@@ -126,6 +126,11 @@ def extract_reading(data: dict[str, Any]) -> dict[str, Any] | None:
 
     if power_sum is None and power_import is None:
         return None
+
+    # Firmwares without OBIS 1-0:16.7.0 don't expose a net-power sum.
+    # Derive it so households with PV feed-in show negative values.
+    if power_sum is None:
+        power_sum = power_import - (power_export or 0)
 
     return {
         "power_import_w": power_import,
