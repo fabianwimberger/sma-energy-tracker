@@ -96,7 +96,7 @@ class SmaPoller:
 
     async def _store_reading(self, reading: dict[str, Any]) -> None:
         """Insert a reading and refresh the affected daily summary."""
-        now = datetime.now().replace(second=0, microsecond=0)
+        now = datetime.now()
 
         async with self.engine.begin() as conn:
             await conn.execute(
@@ -146,8 +146,8 @@ class SmaPoller:
                 text("""
                     SELECT
                         COUNT(*) as reading_count,
-                        MAX(power_sum_w) as max_power_w,
-                        AVG(power_sum_w) as avg_power_w
+                        MAX(COALESCE(power_sum_w, power_import_w)) as max_power_w,
+                        AVG(COALESCE(power_sum_w, power_import_w)) as avg_power_w
                     FROM sma_readings
                     WHERE DATE(reading_time) = :date
                 """),
@@ -193,10 +193,10 @@ class SmaPoller:
                     SELECT
                         strftime('%H:%M', reading_time) as time_slot,
                         AVG(power_import_w) as avg_power_import_w,
-                        AVG(power_sum_w) as avg_power_sum_w,
+                        AVG(COALESCE(power_sum_w, power_import_w)) as avg_power_sum_w,
                         COUNT(*) as sample_count
                     FROM sma_readings
-                    WHERE power_sum_w IS NOT NULL
+                    WHERE COALESCE(power_sum_w, power_import_w) IS NOT NULL
                     GROUP BY strftime('%H:%M', reading_time)
                     HAVING COUNT(*) >= 5
                 """)

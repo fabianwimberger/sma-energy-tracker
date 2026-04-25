@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const state = {
         chart: null,
-        currentAggregation: 'daily',
+        currentAggregation: 'raw',
         flatpickrInstance: null
     };
 
@@ -388,6 +388,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Poll status periodically
             setInterval(updateSmaStatus, 30000);
             setInterval(updateStats, 30000);
+            // Live-refresh the chart so new readings appear without a page reload
+            setInterval(updateChart, 5000);
         } catch (error) {
             console.error('Initialization error:', error);
             showSmaError('Initialization error. Please refresh the page.');

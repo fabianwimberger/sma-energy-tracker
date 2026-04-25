@@ -8,9 +8,21 @@
 A self-hosted dashboard for visualizing electricity consumption directly from the
 **Smart Meter Adapter (SMA)** by Österreichs E-Wirtschaft.
 
-Unlike the original [energy-tracker](https://github.com/fabianwimberger/energy-tracker)
-which imports CSV files, this application polls the SMA's JSON REST API directly —
-no manual file handling required.
+## Background
+
+| | [LinzNetz Energy Tracker](https://github.com/fabianwimberger/linznetz-energy-tracker) | SMA Energy Tracker |
+|---|---|---|
+| **Data source** | CSV exports from your grid operator | SMA JSON REST API |
+| **How it gets data** | You download and upload CSV files | Polls the SMA automatically |
+| **Best for** | Historical analysis, billing checks | Live monitoring, real-time charts |
+
+If you already have a SMA device on your network, this tracker gives you live
+readings without manual file handling.
+
+<p align="center">
+  <img src="assets/screenshot.png" width="100%" alt="SMA Energy Tracker Dashboard">
+  <br><em>Live dashboard polling the Smart Meter Adapter via REST</em>
+</p>
 
 ## Features
 
@@ -134,10 +146,7 @@ All configuration is via environment variables.
 
 ## Finding Your SMA Token
 
-1. Open the SMA web interface in your browser (e.g. `https://192.168.1.100`)
-2. Navigate to **API → JSON**
-3. Copy the **Authorization Token** shown on that page
-4. Use it as the `SMA_TOKEN` environment variable
+See the [SMA Setup Guide](docs/sma-setup.md) for step-by-step instructions on enabling the JSON API and creating your token.
 
 ## Production Deployment
 
