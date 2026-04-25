@@ -129,7 +129,7 @@ def extract_reading(data: dict[str, Any]) -> dict[str, Any] | None:
 
     # Firmwares without OBIS 1-0:16.7.0 don't expose a net-power sum.
     # Derive it so households with PV feed-in show negative values.
-    if power_sum is None:
+    if power_sum is None and power_import is not None:
         power_sum = power_import - (power_export or 0)
 
     return {
