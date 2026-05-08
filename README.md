@@ -5,6 +5,8 @@
 [![Docker](https://github.com/fabianwimberger/sma-energy-tracker/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/fabianwimberger/sma-energy-tracker/pkgs/container/sma-energy-tracker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **⚠️ Disclaimer**: This is an independent, community-created project. It is **not affiliated with, endorsed by, or sponsored by Österreichs Energie, Österreichs E-Wirtschaft, or any Austrian grid operator**. "Smart Meter Adapter", "SMA", and associated logos are trademarks of their respective owners. Use of these names is solely for identification and compatibility purposes. Use at your own risk.
+
 A self-hosted dashboard for visualizing electricity consumption directly from the
 **Smart Meter Adapter (SMA)** by Österreichs E-Wirtschaft.
 
