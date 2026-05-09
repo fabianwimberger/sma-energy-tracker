@@ -10,7 +10,6 @@ import httpx
 logger = logging.getLogger(__name__)
 
 API_ENDPOINT_MEASUREMENT = "/api/v1/measurement"
-API_ENDPOINT_STATUS = "/api/v1/status"
 TIMEOUT_READ = 15.0
 
 
@@ -60,35 +59,10 @@ class SmaApiClient:
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def validate_connection(self) -> bool:
-        """Validate we can connect to the SMA."""
-        try:
-            data = await self._get_json(API_ENDPOINT_MEASUREMENT)
-            return isinstance(data, dict) and len(data) > 0
-        except SmaApiError:
-            return False
-
     async def read_measurement(self) -> dict[str, Any]:
         """Read measurement data from the SMA."""
         data: dict[str, Any] = await self._get_json(API_ENDPOINT_MEASUREMENT)
         return data
-
-    async def read_status(self) -> dict[str, str]:
-        """Read status info (firmware, serial, etc.)."""
-        result: dict[str, str] = {}
-        try:
-            data = await self._get_json(API_ENDPOINT_STATUS)
-            if isinstance(data, dict):
-                for key, value in data.items():
-                    if isinstance(value, str | int | float):
-                        result[key] = str(value)
-                    elif isinstance(value, dict):
-                        for sub_key, sub_value in value.items():
-                            if isinstance(sub_value, str | int | float):
-                                result[f"{key}.{sub_key}"] = str(sub_value)
-        except SmaApiError:
-            logger.debug("Status endpoint not available")
-        return result
 
     async def _get_json(self, endpoint: str) -> Any:
         """Perform a GET request and return the JSON response."""
