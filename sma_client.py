@@ -103,16 +103,28 @@ class SmaApiClient:
             raise SmaApiError(f"Connection error: {err}") from err
 
 
+def _get_number(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
 def _get_energy_kwh(data: dict[str, Any], obis: str) -> float | None:
     entry = data.get(obis)
     if not isinstance(entry, dict):
         return None
 
-    value = entry.get("value")
-    if not isinstance(value, int | float):
+    value_kwh = _get_number(entry.get("value"))
+    if value_kwh is None:
         return None
 
-    value_kwh = float(value)
     unit = str(entry.get("unit", "Wh")).lower()
     if unit == "kwh":
         return value_kwh
@@ -133,7 +145,7 @@ def extract_reading(data: dict[str, Any]) -> dict[str, Any] | None:
     def _get_value(obis: str) -> float | None:
         entry = data.get(obis)
         if isinstance(entry, dict):
-            return entry.get("value")
+            return _get_number(entry.get("value"))
         return None
 
     power_sum = _get_value("1-0:16.7.0")
