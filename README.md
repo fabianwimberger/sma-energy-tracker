@@ -141,7 +141,7 @@ All configuration is via environment variables.
 | `DATA_DIR` | `/app/data` | Directory for SQLite database |
 | `DATABASE_URL` | derived | SQLAlchemy async URL (override for custom path) |
 | `STATIC_DIR` | `/app/static` | Directory served at `/static` |
-| `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
+| `CORS_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated allowed origins |
 | `SMA_USE_HTTPS` | `true` | Use HTTPS when connecting to SMA |
 | `SMA_VERIFY_SSL` | `false` | Verify SSL certificate (disable for self-signed certs) |
 | `SMA_POLL_INTERVAL` | `30` | Polling interval in seconds |
@@ -174,8 +174,9 @@ networks:
     external: true
 ```
 
-The app has no built-in authentication — put it behind something (OIDC proxy,
-basic auth, Tailscale, etc.) before exposing it to the internet.
+The app has no built-in authentication — keep host ports bound to trusted
+interfaces only and put it behind something (OIDC proxy, basic auth, Tailscale,
+etc.) before exposing it to the internet.
 
 ## How It Works
 
