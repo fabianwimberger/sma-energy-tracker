@@ -103,6 +103,23 @@ class SmaApiClient:
             raise SmaApiError(f"Connection error: {err}") from err
 
 
+def _get_energy_kwh(data: dict[str, Any], obis: str) -> float | None:
+    entry = data.get(obis)
+    if not isinstance(entry, dict):
+        return None
+
+    value = entry.get("value")
+    if value is None:
+        return None
+
+    unit = str(entry.get("unit", "Wh")).lower()
+    if unit == "kwh":
+        return value
+    if unit == "mwh":
+        return value * 1000
+    return value * 0.001
+
+
 def extract_reading(data: dict[str, Any]) -> dict[str, Any] | None:
     """Extract relevant OBIS values from measurement data.
 
@@ -121,8 +138,8 @@ def extract_reading(data: dict[str, Any]) -> dict[str, Any] | None:
     power_sum = _get_value("1-0:16.7.0")
     power_import = _get_value("1-0:1.7.0")
     power_export = _get_value("1-0:2.7.0")
-    energy_import_wh = _get_value("1-0:1.8.0")
-    energy_export_wh = _get_value("1-0:2.8.0")
+    energy_import_kwh = _get_energy_kwh(data, "1-0:1.8.0")
+    energy_export_kwh = _get_energy_kwh(data, "1-0:2.8.0")
 
     if power_sum is None and power_import is None:
         return None
@@ -136,10 +153,6 @@ def extract_reading(data: dict[str, Any]) -> dict[str, Any] | None:
         "power_import_w": power_import,
         "power_export_w": power_export,
         "power_sum_w": power_sum,
-        "energy_import_total_kwh": (energy_import_wh * 0.001)
-        if energy_import_wh is not None
-        else None,
-        "energy_export_total_kwh": (energy_export_wh * 0.001)
-        if energy_export_wh is not None
-        else None,
+        "energy_import_total_kwh": energy_import_kwh,
+        "energy_export_total_kwh": energy_export_kwh,
     }
