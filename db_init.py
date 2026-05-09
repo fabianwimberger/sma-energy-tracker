@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 async def init_database(engine: AsyncEngine):
@@ -48,6 +48,8 @@ async def apply_migrations(conn, current_version):
             text("""
             CREATE TABLE IF NOT EXISTS sma_readings (
                 reading_time TIMESTAMP PRIMARY KEY,
+                reading_date_local TEXT,
+                time_slot_local TEXT,
                 power_import_w REAL,
                 power_export_w REAL,
                 power_sum_w REAL,
@@ -98,15 +100,15 @@ async def apply_migrations(conn, current_version):
         # Indexes
         await conn.execute(
             text("""
-            CREATE INDEX IF NOT EXISTS idx_readings_date
-            ON sma_readings(DATE(reading_time))
+            CREATE INDEX IF NOT EXISTS idx_readings_date_local
+            ON sma_readings(reading_date_local)
         """)
         )
 
         await conn.execute(
             text("""
-            CREATE INDEX IF NOT EXISTS idx_readings_time_hour_minute
-            ON sma_readings(strftime('%H:%M', reading_time))
+            CREATE INDEX IF NOT EXISTS idx_readings_time_slot_local
+            ON sma_readings(time_slot_local)
         """)
         )
 
@@ -142,5 +144,47 @@ async def apply_migrations(conn, current_version):
             END
         """)
         )
+
+    if current_version < 2:
+        logger.info("Applying schema migration v2: local date/time columns")
+        result = await conn.execute(text("PRAGMA table_info(sma_readings)"))
+        columns = {row[1] for row in result.fetchall()}
+
+        if "reading_date_local" not in columns:
+            await conn.execute(
+                text("ALTER TABLE sma_readings ADD COLUMN reading_date_local TEXT")
+            )
+        if "time_slot_local" not in columns:
+            await conn.execute(
+                text("ALTER TABLE sma_readings ADD COLUMN time_slot_local TEXT")
+            )
+
+        # Populate new columns for existing data (legacy reading_time is naive local time)
+        await conn.execute(
+            text("""
+                UPDATE sma_readings
+                SET reading_date_local = DATE(reading_time),
+                    time_slot_local = strftime('%H:%M', reading_time)
+                WHERE reading_date_local IS NULL
+            """)
+        )
+
+        await conn.execute(
+            text("""
+            CREATE INDEX IF NOT EXISTS idx_readings_date_local
+            ON sma_readings(reading_date_local)
+        """)
+        )
+
+        await conn.execute(
+            text("""
+            CREATE INDEX IF NOT EXISTS idx_readings_time_slot_local
+            ON sma_readings(time_slot_local)
+        """)
+        )
+
+        # Drop legacy indexes that may exist from v1
+        await conn.execute(text("DROP INDEX IF EXISTS idx_readings_date"))
+        await conn.execute(text("DROP INDEX IF EXISTS idx_readings_time_hour_minute"))
 
         await conn.execute(text("ANALYZE"))

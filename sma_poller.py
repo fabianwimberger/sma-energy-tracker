@@ -4,8 +4,9 @@
 import asyncio
 import contextlib
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -14,6 +15,7 @@ from sma_client import SmaApiClient, SmaApiError, extract_reading
 
 logger = logging.getLogger(__name__)
 HOURLY_PATTERN_REFRESH_INTERVAL = timedelta(hours=1)
+LOCAL_TZ = ZoneInfo(__import__("os").getenv("TZ", "Europe/Vienna"))
 
 
 class SmaPoller:
@@ -31,6 +33,14 @@ class SmaPoller:
         self._task: asyncio.Task | None = None
         self._last_pattern_refresh: datetime | None = None
         self._running = False
+        self._today_date: date | None = None
+        self._today_first_import: float | None = None
+        self._today_first_export: float | None = None
+        self._today_last_import: float | None = None
+        self._today_last_export: float | None = None
+        self._today_power_sum: float = 0.0
+        self._today_power_max: float = 0.0
+        self._today_reading_count: int = 0
 
     async def start(self) -> None:
         """Start the background polling task."""
@@ -82,7 +92,7 @@ class SmaPoller:
             await self._log_connection(True)
 
             # Refresh hourly pattern if needed
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             if (
                 self._last_pattern_refresh is None
                 or now - self._last_pattern_refresh > HOURLY_PATTERN_REFRESH_INTERVAL
@@ -96,20 +106,27 @@ class SmaPoller:
 
     async def _store_reading(self, reading: dict[str, Any]) -> None:
         """Insert a reading and refresh the affected daily summary."""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
+        local_now = now.astimezone(LOCAL_TZ)
+        reading_date_local = local_now.date().isoformat()
+        time_slot_local = local_now.strftime("%H:%M")
 
         async with self.engine.begin() as conn:
             await conn.execute(
                 text("""
                     INSERT OR REPLACE INTO sma_readings
-                        (reading_time, power_import_w, power_export_w, power_sum_w,
+                        (reading_time, reading_date_local, time_slot_local,
+                         power_import_w, power_export_w, power_sum_w,
                          energy_import_total_kwh, energy_export_total_kwh)
                     VALUES
-                        (:reading_time, :power_import_w, :power_export_w, :power_sum_w,
+                        (:reading_time, :reading_date_local, :time_slot_local,
+                         :power_import_w, :power_export_w, :power_sum_w,
                          :energy_import_total_kwh, :energy_export_total_kwh)
                 """),
                 {
                     "reading_time": now,
+                    "reading_date_local": reading_date_local,
+                    "time_slot_local": time_slot_local,
                     "power_import_w": reading.get("power_import_w"),
                     "power_export_w": reading.get("power_export_w"),
                     "power_sum_w": reading.get("power_sum_w"),
@@ -118,12 +135,76 @@ class SmaPoller:
                 },
             )
 
-        # Refresh daily summary for today
-        today = now.date()
-        await self._refresh_daily_summary(today)
+        # Refresh daily summary for today (local date)
+        today_local = local_now.date()
+        power = reading.get("power_sum_w") or reading.get("power_import_w") or 0.0
+        energy_import = reading.get("energy_import_total_kwh")
+        energy_export = reading.get("energy_export_total_kwh")
 
-    async def _refresh_daily_summary(self, date_obj) -> None:
-        """Recalculate daily summary for a given date using counter deltas."""
+        if self._today_date != today_local:
+            # New day or cold start: do full recompute once to ensure correctness
+            stats = await self._refresh_daily_summary(today_local)
+            self._today_date = today_local
+            self._today_first_import = stats.get("first_import")
+            self._today_first_export = stats.get("first_export")
+            self._today_last_import = stats.get("last_import")
+            self._today_last_export = stats.get("last_export")
+            self._today_reading_count = stats.get("reading_count", 0)
+            self._today_power_max = stats.get("max_power_w") or 0.0
+            avg_power = stats.get("avg_power_w") or 0.0
+            self._today_power_sum = avg_power * self._today_reading_count
+        else:
+            # Same day: incremental update to avoid full aggregate scans
+            if energy_import is not None:
+                if self._today_first_import is None:
+                    self._today_first_import = energy_import
+                self._today_last_import = energy_import
+            if energy_export is not None:
+                if self._today_first_export is None:
+                    self._today_first_export = energy_export
+                self._today_last_export = energy_export
+
+            self._today_reading_count += 1
+            self._today_power_sum += power
+            if power > self._today_power_max:
+                self._today_power_max = power
+
+            energy_import_kwh = 0.0
+            energy_export_kwh = 0.0
+            if self._today_last_import is not None and self._today_first_import is not None:
+                energy_import_kwh = max(0.0, float(self._today_last_import - self._today_first_import))
+            if self._today_last_export is not None and self._today_first_export is not None:
+                energy_export_kwh = max(0.0, float(self._today_last_export - self._today_first_export))
+
+            avg_power = (
+                self._today_power_sum / self._today_reading_count
+                if self._today_reading_count > 0
+                else 0.0
+            )
+
+            async with self.engine.begin() as conn:
+                await conn.execute(
+                    text("""
+                        INSERT OR REPLACE INTO daily_energy_summary
+                            (date, energy_import_kwh, energy_export_kwh,
+                             max_power_w, avg_power_w, reading_count)
+                        VALUES
+                            (:date, :energy_import_kwh, :energy_export_kwh,
+                             :max_power_w, :avg_power_w, :reading_count)
+                    """),
+                    {
+                        "date": today_local.isoformat(),
+                        "energy_import_kwh": energy_import_kwh,
+                        "energy_export_kwh": energy_export_kwh,
+                        "max_power_w": self._today_power_max if self._today_power_max > 0 else None,
+                        "avg_power_w": avg_power if avg_power > 0 else None,
+                        "reading_count": self._today_reading_count,
+                    },
+                )
+
+    async def _refresh_daily_summary(self, date_local: date) -> dict[str, Any]:
+        """Recalculate daily summary for a given local date using counter deltas.
+        Returns the computed stats for incremental caching."""
         async with self.engine.begin() as conn:
             # Get first and last total counter values for the day
             counter_result = await conn.execute(
@@ -134,10 +215,10 @@ class SmaPoller:
                         MIN(energy_export_total_kwh) as first_export,
                         MAX(energy_export_total_kwh) as last_export
                     FROM sma_readings
-                    WHERE DATE(reading_time) = :date
+                    WHERE reading_date_local = :date
                       AND energy_import_total_kwh IS NOT NULL
                 """),
-                {"date": date_obj.isoformat()},
+                {"date": date_local.isoformat()},
             )
             counter_row = counter_result.mappings().fetchone()
 
@@ -149,9 +230,9 @@ class SmaPoller:
                         MAX(COALESCE(power_sum_w, power_import_w)) as max_power_w,
                         AVG(COALESCE(power_sum_w, power_import_w)) as avg_power_w
                     FROM sma_readings
-                    WHERE DATE(reading_time) = :date
+                    WHERE reading_date_local = :date
                 """),
-                {"date": date_obj.isoformat()},
+                {"date": date_local.isoformat()},
             )
             power_row = power_result.mappings().fetchone()
 
@@ -173,7 +254,7 @@ class SmaPoller:
                          :max_power_w, :avg_power_w, :reading_count)
                 """),
                 {
-                    "date": date_obj.isoformat(),
+                    "date": date_local.isoformat(),
                     "energy_import_kwh": max(0.0, energy_import_kwh),
                     "energy_export_kwh": max(0.0, energy_export_kwh),
                     "max_power_w": power_row["max_power_w"] if power_row else None,
@@ -182,8 +263,18 @@ class SmaPoller:
                 },
             )
 
+        return {
+            "first_import": counter_row["first_import"] if counter_row else None,
+            "last_import": counter_row["last_import"] if counter_row else None,
+            "first_export": counter_row["first_export"] if counter_row else None,
+            "last_export": counter_row["last_export"] if counter_row else None,
+            "reading_count": power_row["reading_count"] if power_row else 0,
+            "max_power_w": power_row["max_power_w"] if power_row else None,
+            "avg_power_w": power_row["avg_power_w"] if power_row else None,
+        }
+
     async def _refresh_hourly_pattern(self) -> None:
-        """Rebuild the daily-pattern cache."""
+        """Rebuild the daily-pattern cache from local time slots."""
         async with self.engine.begin() as conn:
             await conn.execute(text("DELETE FROM hourly_pattern"))
             await conn.execute(
@@ -191,13 +282,14 @@ class SmaPoller:
                     INSERT INTO hourly_pattern
                         (time_slot, avg_power_import_w, avg_power_sum_w, sample_count)
                     SELECT
-                        strftime('%H:%M', reading_time) as time_slot,
+                        time_slot_local as time_slot,
                         AVG(power_import_w) as avg_power_import_w,
                         AVG(COALESCE(power_sum_w, power_import_w)) as avg_power_sum_w,
                         COUNT(*) as sample_count
                     FROM sma_readings
                     WHERE COALESCE(power_sum_w, power_import_w) IS NOT NULL
-                    GROUP BY strftime('%H:%M', reading_time)
+                      AND time_slot_local IS NOT NULL
+                    GROUP BY time_slot_local
                     HAVING COUNT(*) >= 5
                 """)
             )
@@ -209,7 +301,11 @@ class SmaPoller:
             await conn.execute(
                 text("""
                     INSERT INTO connection_log (polled_at, success, error_message)
-                    VALUES (datetime('now'), :success, :error)
+                    VALUES (:polled_at, :success, :error)
                 """),
-                {"success": success, "error": error_message},
+                {
+                    "polled_at": datetime.now(timezone.utc),
+                    "success": success,
+                    "error": error_message,
+                },
             )
