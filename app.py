@@ -4,10 +4,10 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import date, datetime, time, timedelta, timezone
-from zoneinfo import ZoneInfo
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 import aiofiles  # type: ignore[import-untyped]
 import uvicorn
@@ -248,7 +248,7 @@ async def get_chart_data(
 
             rows = await _fetch_data(db_context["engine"], query)
 
-            current_date = datetime.now(timezone.utc).astimezone(LOCAL_TZ).date()
+            current_date = datetime.now(UTC).astimezone(LOCAL_TZ).date()
             current_week = current_date.strftime("%Y-%W")
 
             forecast_values: list[float | None] = []
@@ -292,7 +292,7 @@ async def get_chart_data(
 
             rows = await _fetch_data(db_context["engine"], query)
 
-            current_date = datetime.now(timezone.utc).astimezone(LOCAL_TZ).date()
+            current_date = datetime.now(UTC).astimezone(LOCAL_TZ).date()
             current_month = current_date.strftime("%Y-%m")
 
             forecast_values = []
@@ -342,7 +342,7 @@ async def get_chart_data(
 
             rows = await _fetch_data(db_context["engine"], query)
 
-            current_date = datetime.now(timezone.utc).astimezone(LOCAL_TZ).date()
+            current_date = datetime.now(UTC).astimezone(LOCAL_TZ).date()
             current_year = current_date.strftime("%Y")
 
             forecast_values = []
@@ -441,7 +441,7 @@ async def get_sma_status():
             return None
         if isinstance(dt, datetime):
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
+                dt = dt.replace(tzinfo=UTC)
             return dt.isoformat()
         # Legacy naive string from DB
         s = str(dt)

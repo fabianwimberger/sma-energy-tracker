@@ -4,7 +4,7 @@
 import asyncio
 import contextlib
 import logging
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -92,7 +92,7 @@ class SmaPoller:
             await self._log_connection(True)
 
             # Refresh hourly pattern if needed
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if (
                 self._last_pattern_refresh is None
                 or now - self._last_pattern_refresh > HOURLY_PATTERN_REFRESH_INTERVAL
@@ -106,7 +106,7 @@ class SmaPoller:
 
     async def _store_reading(self, reading: dict[str, Any]) -> None:
         """Insert a reading and refresh the affected daily summary."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         local_now = now.astimezone(LOCAL_TZ)
         reading_date_local = local_now.date().isoformat()
         time_slot_local = local_now.strftime("%H:%M")
@@ -172,9 +172,13 @@ class SmaPoller:
             energy_import_kwh = 0.0
             energy_export_kwh = 0.0
             if self._today_last_import is not None and self._today_first_import is not None:
-                energy_import_kwh = max(0.0, float(self._today_last_import - self._today_first_import))
+                energy_import_kwh = max(
+                    0.0, float(self._today_last_import - self._today_first_import)
+                )
             if self._today_last_export is not None and self._today_first_export is not None:
-                energy_export_kwh = max(0.0, float(self._today_last_export - self._today_first_export))
+                energy_export_kwh = max(
+                    0.0, float(self._today_last_export - self._today_first_export)
+                )
 
             avg_power = (
                 self._today_power_sum / self._today_reading_count
@@ -304,7 +308,7 @@ class SmaPoller:
                     VALUES (:polled_at, :success, :error)
                 """),
                 {
-                    "polled_at": datetime.now(timezone.utc),
+                    "polled_at": datetime.now(UTC),
                     "success": success,
                     "error": error_message,
                 },

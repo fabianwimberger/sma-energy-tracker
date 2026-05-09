@@ -151,13 +151,9 @@ async def apply_migrations(conn, current_version):
         columns = {row[1] for row in result.fetchall()}
 
         if "reading_date_local" not in columns:
-            await conn.execute(
-                text("ALTER TABLE sma_readings ADD COLUMN reading_date_local TEXT")
-            )
+            await conn.execute(text("ALTER TABLE sma_readings ADD COLUMN reading_date_local TEXT"))
         if "time_slot_local" not in columns:
-            await conn.execute(
-                text("ALTER TABLE sma_readings ADD COLUMN time_slot_local TEXT")
-            )
+            await conn.execute(text("ALTER TABLE sma_readings ADD COLUMN time_slot_local TEXT"))
 
         # Populate new columns for existing data (legacy reading_time is naive local time)
         await conn.execute(
