@@ -109,15 +109,16 @@ def _get_energy_kwh(data: dict[str, Any], obis: str) -> float | None:
         return None
 
     value = entry.get("value")
-    if value is None:
+    if not isinstance(value, int | float):
         return None
 
+    value_kwh = float(value)
     unit = str(entry.get("unit", "Wh")).lower()
     if unit == "kwh":
-        return value
+        return value_kwh
     if unit == "mwh":
-        return value * 1000
-    return value * 0.001
+        return value_kwh * 1000
+    return value_kwh * 0.001
 
 
 def extract_reading(data: dict[str, Any]) -> dict[str, Any] | None:
