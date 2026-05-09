@@ -151,10 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Moving average
         const averageNames = {
-            daily: '90-Day Average',
-            weekly: '5-Week Average',
-            monthly: '5-Month Average',
-            yearly: '3-Year Average'
+            daily: '90-Point Average',
+            weekly: '5-Point Average',
+            monthly: '5-Point Average',
+            yearly: '3-Point Average'
         };
 
         if (data.moving_average && averageNames[state.currentAggregation]) {
@@ -388,8 +388,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Poll status periodically
             setInterval(updateSmaStatus, 30000);
             setInterval(updateStats, 30000);
-            // Live-refresh the chart so new readings appear without a page reload
-            setInterval(updateChart, 5000);
+            // Live-refresh the chart so new readings appear without a page reload.
+            // For raw data we poll frequently; for aggregated views new data only
+            // arrives at the SMA_POLL_INTERVAL (~30s), so polling every 5s is wasteful.
+            setInterval(() => {
+                if (state.currentAggregation === 'raw') {
+                    updateChart();
+                }
+            }, 5000);
+            setInterval(() => {
+                if (state.currentAggregation !== 'raw') {
+                    updateChart();
+                }
+            }, 30000);
         } catch (error) {
             console.error('Initialization error:', error);
             showSmaError('Initialization error. Please refresh the page.');

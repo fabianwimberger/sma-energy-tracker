@@ -13,6 +13,13 @@ class TestRootEndpoint:
         assert response.headers["X-Frame-Options"] == "DENY"
 
 
+class TestHealthzEndpoint:
+    def test_returns_ok(self, client):
+        response = client.get("/api/healthz")
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}
+
+
 class TestLatestDateEndpoint:
     def test_returns_json(self, client):
         response = client.get("/api/latest-date")
