@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sma-energy-tracker"
-version = "1.1.0"
+version = "1.1.1"
 description = "Self-hosted dashboard for visualizing electricity consumption from Smart Meter Adapter"
 readme = "README.md"
 requires-python = ">=3.13"

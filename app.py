@@ -96,7 +96,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SMA Energy Tracker",
     description="Web application for visualizing Smart Meter Adapter data.",
-    version="1.0.0",
+    version="1.1.1",
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
