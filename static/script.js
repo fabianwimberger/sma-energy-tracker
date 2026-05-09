@@ -57,7 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 : 'status-value status-error';
 
             elements.smaLastPoll.textContent = status.last_poll
-                ? new Date(status.last_poll).toLocaleTimeString()
+                ? new Date(status.last_poll).toLocaleTimeString(undefined, {
+                    timeZone: status.timezone || undefined,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                })
                 : '—';
             elements.smaReadings.textContent = status.total_readings.toLocaleString();
 
@@ -386,21 +392,10 @@ document.addEventListener('DOMContentLoaded', () => {
             await updateSmaStatus();
 
             // Poll status periodically
-            setInterval(updateSmaStatus, 30000);
-            setInterval(updateStats, 30000);
+            setInterval(updateSmaStatus, 5000);
+            setInterval(updateStats, 5000);
             // Live-refresh the chart so new readings appear without a page reload.
-            // For raw data we poll frequently; for aggregated views new data only
-            // arrives at the SMA_POLL_INTERVAL (~30s), so polling every 5s is wasteful.
-            setInterval(() => {
-                if (state.currentAggregation === 'raw') {
-                    updateChart();
-                }
-            }, 5000);
-            setInterval(() => {
-                if (state.currentAggregation !== 'raw') {
-                    updateChart();
-                }
-            }, 30000);
+            setInterval(updateChart, 5000);
         } catch (error) {
             console.error('Initialization error:', error);
             showSmaError('Initialization error. Please refresh the page.');

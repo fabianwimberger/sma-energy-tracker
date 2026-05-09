@@ -55,7 +55,7 @@ SMA_HOST=192.168.1.100
 SMA_TOKEN=your-sma-api-token
 SMA_USE_HTTPS=true
 SMA_VERIFY_SSL=false
-SMA_POLL_INTERVAL=30
+SMA_POLL_INTERVAL=5
 EOF
 
 # Run with pre-built image
@@ -144,7 +144,7 @@ All configuration is via environment variables.
 | `CORS_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000` | Comma-separated allowed origins |
 | `SMA_USE_HTTPS` | `true` | Use HTTPS when connecting to SMA |
 | `SMA_VERIFY_SSL` | `false` | Verify SSL certificate (disable for self-signed certs) |
-| `SMA_POLL_INTERVAL` | `30` | Polling interval in seconds |
+| `SMA_POLL_INTERVAL` | `5` | Polling interval in seconds |
 
 ## Finding Your SMA Token
 
