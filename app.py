@@ -4,9 +4,10 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 import aiofiles  # type: ignore[import-untyped]
 import uvicorn
@@ -31,13 +32,25 @@ DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DATA_DIR}/sma_energy_data.db")
 STATIC_DIR = Path(os.getenv("STATIC_DIR", "/app/static"))
 
-CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+_raw_cors = os.getenv("CORS_ORIGINS", "")
+CORS_ORIGINS = [o.strip() for o in _raw_cors.split(",") if o.strip()]
+if not CORS_ORIGINS:
+    CORS_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000"]
+
+_ALLOW_CREDENTIALS = True
+if "*" in CORS_ORIGINS:
+    logger.warning(
+        "CORS_ORIGINS contains '*'; disabling credentials because browsers reject "
+        "Access-Control-Allow-Origin: * when credentials are enabled."
+    )
+    _ALLOW_CREDENTIALS = False
 
 SMA_HOST = os.getenv("SMA_HOST")
 SMA_TOKEN = os.getenv("SMA_TOKEN")
 SMA_USE_HTTPS = os.getenv("SMA_USE_HTTPS", "true").lower() in ("1", "true", "yes")
 SMA_VERIFY_SSL = os.getenv("SMA_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
 SMA_POLL_INTERVAL = int(os.getenv("SMA_POLL_INTERVAL", "30"))
+LOCAL_TZ = ZoneInfo(os.getenv("TZ", "Europe/Vienna"))
 
 
 db_context: dict[str, Any] = {}
@@ -92,7 +105,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=_ALLOW_CREDENTIALS,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -235,7 +248,7 @@ async def get_chart_data(
 
             rows = await _fetch_data(db_context["engine"], query)
 
-            current_date = datetime.now().date()
+            current_date = datetime.now(UTC).astimezone(LOCAL_TZ).date()
             current_week = current_date.strftime("%Y-%W")
 
             forecast_values: list[float | None] = []
@@ -279,7 +292,7 @@ async def get_chart_data(
 
             rows = await _fetch_data(db_context["engine"], query)
 
-            current_date = datetime.now().date()
+            current_date = datetime.now(UTC).astimezone(LOCAL_TZ).date()
             current_month = current_date.strftime("%Y-%m")
 
             forecast_values = []
@@ -329,7 +342,7 @@ async def get_chart_data(
 
             rows = await _fetch_data(db_context["engine"], query)
 
-            current_date = datetime.now().date()
+            current_date = datetime.now(UTC).astimezone(LOCAL_TZ).date()
             current_year = current_date.strftime("%Y")
 
             forecast_values = []
@@ -363,14 +376,14 @@ async def get_chart_data(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Database error: {e}", exc_info=True)
+        logger.error("Database error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Database error") from e
 
 
 @api_router.get("/latest-date")
 async def get_latest_data_date():
-    """Returns the date of the most recent reading in the database."""
-    query = "SELECT DATE(MAX(reading_time)) as latest_date FROM sma_readings"
+    """Returns the most recent local date with readings."""
+    query = "SELECT MAX(date) as latest_date FROM daily_energy_summary"
     rows = await _fetch_data(db_context["engine"], query)
     data = rows[0] if rows else None
     return {"latest_date": data["latest_date"] if data and data["latest_date"] else None}
@@ -390,6 +403,12 @@ async def get_database_stats():
     """
     rows = await _fetch_data(db_context["engine"], query)
     return rows[0] if rows else {}
+
+
+@api_router.get("/healthz")
+async def healthz():
+    """Lightweight health check endpoint with no database I/O."""
+    return {"status": "ok"}
 
 
 @api_router.get("/sma-status", response_model=SmaStatus)
@@ -417,11 +436,26 @@ async def get_sma_status():
     count_rows = await _fetch_data(engine, count_query)
     total_readings = count_rows[0]["c"] if count_rows else 0
 
+    def _fmt(dt):
+        if dt is None:
+            return None
+        if isinstance(dt, datetime):
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            return dt.isoformat()
+        # Legacy naive string from DB
+        s = str(dt)
+        if "T" not in s:
+            s = s.replace(" ", "T")
+        if "+" not in s and "Z" not in s:
+            s += "+00:00"
+        return s
+
     return SmaStatus(
         configured=True,
         host=SMA_HOST,
         connected=log_entry["success"] if log_entry else False,
-        last_poll=log_entry["polled_at"] if log_entry else None,
+        last_poll=_fmt(log_entry["polled_at"]) if log_entry else None,
         last_error=log_entry["error_message"] if log_entry else None,
         total_readings=total_readings,
     )
