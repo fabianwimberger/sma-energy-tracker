@@ -49,7 +49,7 @@ SMA_HOST = os.getenv("SMA_HOST")
 SMA_TOKEN = os.getenv("SMA_TOKEN")
 SMA_USE_HTTPS = os.getenv("SMA_USE_HTTPS", "true").lower() in ("1", "true", "yes")
 SMA_VERIFY_SSL = os.getenv("SMA_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
-SMA_POLL_INTERVAL = int(os.getenv("SMA_POLL_INTERVAL", "30"))
+SMA_POLL_INTERVAL = int(os.getenv("SMA_POLL_INTERVAL", "5"))
 LOCAL_TZ = ZoneInfo(os.getenv("TZ", "Europe/Vienna"))
 
 
@@ -96,7 +96,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SMA Energy Tracker",
     description="Web application for visualizing Smart Meter Adapter data.",
-    version="1.1.1",
+    version="1.1.2",
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
@@ -138,6 +138,7 @@ class ChartData(BaseModel):
 class SmaStatus(BaseModel):
     configured: bool
     host: str | None = None
+    timezone: str | None = None
     connected: bool
     last_poll: str | None = None
     last_error: str | None = None
@@ -175,11 +176,11 @@ async def get_chart_data(
                 )
 
             daily_query = """
-                SELECT strftime('%H:%M:%S', reading_time) as label,
+                SELECT time_slot_local || ':' || strftime('%S', reading_time) as label,
                        COALESCE(power_sum_w, power_import_w) as value,
                        power_import_w as import_value
                 FROM sma_readings
-                WHERE DATE(reading_time) = :day
+                WHERE reading_date_local = :day
                 ORDER BY reading_time
             """
 
@@ -442,18 +443,19 @@ async def get_sma_status():
         if isinstance(dt, datetime):
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=UTC)
-            return dt.isoformat()
+            return dt.astimezone(LOCAL_TZ).isoformat()
         # Legacy naive string from DB
         s = str(dt)
         if "T" not in s:
             s = s.replace(" ", "T")
         if "+" not in s and "Z" not in s:
             s += "+00:00"
-        return s
+        return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(LOCAL_TZ).isoformat()
 
     return SmaStatus(
         configured=True,
         host=SMA_HOST,
+        timezone=str(LOCAL_TZ),
         connected=log_entry["success"] if log_entry else False,
         last_poll=_fmt(log_entry["polled_at"]) if log_entry else None,
         last_error=log_entry["error_message"] if log_entry else None,

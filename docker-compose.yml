@@ -15,7 +15,7 @@ services:
       SMA_TOKEN: ${SMA_TOKEN}
       SMA_USE_HTTPS: ${SMA_USE_HTTPS:-true}
       SMA_VERIFY_SSL: ${SMA_VERIFY_SSL:-false}
-      SMA_POLL_INTERVAL: ${SMA_POLL_INTERVAL:-30}
+      SMA_POLL_INTERVAL: ${SMA_POLL_INTERVAL:-5}
 
 volumes:
   sma_energy_data:
