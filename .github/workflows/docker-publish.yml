@@ -65,6 +65,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate artifact attestation
         if: github.event_name != 'pull_request'

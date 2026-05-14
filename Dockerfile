@@ -8,7 +8,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN python download_vendors.py
+RUN --mount=type=secret,id=github_token \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    python download_vendors.py
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
