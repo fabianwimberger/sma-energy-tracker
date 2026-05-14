@@ -2,6 +2,7 @@
 """Download frontend vendor libraries for offline use."""
 
 import json
+import os
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -12,7 +13,11 @@ VENDOR_DIR.mkdir(parents=True, exist_ok=True)
 
 def get_latest_github_release(repo: str) -> str:
     url = f"https://api.github.com/repos/{repo}/releases/latest"
-    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    headers = {"Accept": "application/vnd.github+json"}
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=30) as response:
             data = json.loads(response.read().decode())
@@ -36,7 +41,7 @@ def download_file(url: str, dest: Path) -> None:
         urllib.request.urlretrieve(url, dest)
     except urllib.error.URLError as e:
         raise RuntimeError(f"Failed to download {url}: {e.reason}") from e
-    print(f"✓ Downloaded {dest.name}")
+    print(f"\u2713 Downloaded {dest.name}")
 
 
 def download_chartjs() -> None:
