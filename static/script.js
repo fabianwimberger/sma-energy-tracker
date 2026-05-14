@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
         aggregationControls: document.querySelectorAll('input[name="aggregation"]'),
         datePickerContainer: document.getElementById('date-picker-container'),
         datePickerInput: document.getElementById('date-picker'),
+        panLeftButton: document.getElementById('pan-left-button'),
+        panRightButton: document.getElementById('pan-right-button'),
+        zoomInButton: document.getElementById('zoom-in-button'),
+        zoomOutButton: document.getElementById('zoom-out-button'),
+        zoomResetButton: document.getElementById('zoom-reset-button'),
         statusBadge: document.querySelector('.status-badge .status-text'),
         smaConnection: document.getElementById('sma-connection'),
         smaLastPoll: document.getElementById('sma-last-poll'),
@@ -92,6 +97,33 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.smaError.innerHTML = '';
     }
 
+    function updateZoomControls(disabled) {
+        [
+            elements.panLeftButton,
+            elements.panRightButton,
+            elements.zoomInButton,
+            elements.zoomOutButton,
+            elements.zoomResetButton
+        ].forEach(button => {
+            if (button) button.disabled = disabled;
+        });
+    }
+
+    function handleZoom(scale) {
+        if (!state.chart) return;
+        state.chart.zoom(scale);
+    }
+
+    function panChart(delta) {
+        if (!state.chart) return;
+        state.chart.pan({x: delta}, undefined, 'default');
+    }
+
+    function resetZoom() {
+        if (!state.chart) return;
+        state.chart.resetZoom();
+    }
+
     // Chart Rendering
     function renderChart(data) {
         if (state.chart) {
@@ -102,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isRaw = state.currentAggregation === 'raw';
         const unit = isRaw ? 'W' : 'kWh';
         const isLineChart = isRaw;
+        const hasData = data.labels.length > 0 && data.data.length > 0;
 
         const datasets = [];
 
@@ -190,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pointHoverRadius: 4,
                 tension: 0.4,
                 fill: false,
+                hidden: true,
                 order: 4
             });
         }
@@ -311,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+        updateZoomControls(!hasData);
     }
 
     // Update Chart Data
@@ -380,6 +415,22 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.aggregationControls.forEach(radio =>
                 radio.addEventListener('change', handleAggregationChange)
             );
+            if (elements.panLeftButton) {
+                elements.panLeftButton.addEventListener('click', () => panChart(80));
+            }
+            if (elements.panRightButton) {
+                elements.panRightButton.addEventListener('click', () => panChart(-80));
+            }
+            if (elements.zoomInButton) {
+                elements.zoomInButton.addEventListener('click', () => handleZoom(1.25));
+            }
+            if (elements.zoomOutButton) {
+                elements.zoomOutButton.addEventListener('click', () => handleZoom(0.8));
+            }
+            if (elements.zoomResetButton) {
+                elements.zoomResetButton.addEventListener('click', resetZoom);
+            }
+            updateZoomControls(true);
 
             // Window resize
             window.addEventListener('resize', () => {
