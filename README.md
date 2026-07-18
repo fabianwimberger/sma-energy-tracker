@@ -23,7 +23,7 @@ readings without manual file handling.
 
 <p align="center">
   <img src="assets/screenshot.png" width="100%" alt="SMA Energy Tracker Dashboard">
-  <br><em>Live dashboard polling the Smart Meter Adapter via REST</em>
+  <br><em>Monthly view with import/export tracking, 5-point average, and forecast</em>
 </p>
 
 ## Features
@@ -224,3 +224,5 @@ MIT — see [LICENSE](LICENSE).
 | Chart.js | [MIT](https://github.com/chartjs/Chart.js/blob/master/LICENSE) | https://github.com/chartjs/Chart.js |
 | chartjs-plugin-zoom | [MIT](https://github.com/chartjs/chartjs-plugin-zoom/blob/master/LICENSE) | https://github.com/chartjs/chartjs-plugin-zoom |
 | Flatpickr | [MIT](https://github.com/flatpickr/flatpickr/blob/master/LICENSE.md) | https://github.com/flatpickr/flatpickr |
+| Space Grotesk | [OFL-1.1](https://github.com/floriankarsten/space-grotesk/blob/master/OFL.txt) | https://github.com/floriankarsten/space-grotesk |
+| IBM Plex Mono | [OFL-1.1](https://github.com/IBM/plex/blob/master/LICENSE.txt) | https://github.com/IBM/plex |
