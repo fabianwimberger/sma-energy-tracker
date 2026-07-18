@@ -15,7 +15,14 @@
         <!-- Header -->
         <header class="header">
             <h1 class="header-title">
-                <span class="header-icon">⚡</span>
+                <span class="header-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                        <path d="M4.5 14.2 Q12 6 19.5 14.2"/>
+                        <path d="M7.5 15.8 Q12 10.5 16.5 15.8"/>
+                        <path d="M10.1 17.2 Q12 15 13.9 17.2"/>
+                        <circle cx="12" cy="18.8" r="1.2" fill="currentColor" stroke="none"/>
+                    </svg>
+                </span>
                 <span>SMA Energy Tracker</span>
             </h1>
             <div class="status-badge">
@@ -38,6 +45,13 @@
                     </div>
                     <div class="chart-container">
                         <canvas id="main-chart" role="img" aria-label="Energy consumption chart"></canvas>
+                        <div id="chart-empty-state" class="chart-empty-state hidden" role="status">
+                            <svg class="chart-empty-wave" viewBox="0 0 200 60" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M0 40 C 20 10, 40 10, 60 30 S 100 55, 120 35 S 160 5, 200 25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                            </svg>
+                            <p class="chart-empty-title">No data yet</p>
+                            <p class="chart-empty-subtitle">Waiting for the first reading from your SMA adapter.</p>
+                        </div>
                     </div>
                 </div>
             </div>

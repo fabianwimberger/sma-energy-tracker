@@ -41,7 +41,7 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["."]
-omit = ["*/tests/*"]
+omit = ["*/tests/*", "download_vendors.py"]
 
 [tool.coverage.report]
 exclude_lines = [
