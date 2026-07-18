@@ -17,7 +17,7 @@ def get_latest_npm_version(package: str) -> str:
     try:
         with urllib.request.urlopen(req, timeout=30) as response:
             data = json.loads(response.read().decode())
-            return data["version"]
+            return str(data["version"])
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"npm registry error for {package}: {e.code}") from e
     except urllib.error.URLError as e:
