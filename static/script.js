@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const elements = {
         chartContainer: document.getElementById('main-chart'),
+        chartEmptyState: document.getElementById('chart-empty-state'),
         aggregationControls: document.querySelectorAll('input[name="aggregation"]'),
         datePickerContainer: document.getElementById('date-picker-container'),
         datePickerInput: document.getElementById('date-picker'),
@@ -21,6 +22,28 @@ document.addEventListener('DOMContentLoaded', () => {
         smaReadings: document.getElementById('sma-readings'),
         smaError: document.getElementById('sma-error')
     };
+
+    // Chart palette — read from CSS custom properties so the canvas never
+    // drifts from the design tokens defined in styles.css.
+    function cssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function hexToRgba(hex, alpha) {
+        const v = parseInt(hex.replace('#', ''), 16);
+        return `rgba(${(v >> 16) & 255}, ${(v >> 8) & 255}, ${v & 255}, ${alpha})`;
+    }
+
+    function getChartColors() {
+        return {
+            copper: cssVar('--copper'),
+            current: cssVar('--current'),
+            gold: cssVar('--gold'),
+            slateBlue: cssVar('--slate-blue'),
+            paperDim: cssVar('--paper-dim'),
+            ink: cssVar('--ink'),
+        };
+    }
 
     // API Helpers
     async function fetchData(url) {
@@ -128,14 +151,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderChart(data) {
         if (state.chart) {
             state.chart.destroy();
+            state.chart = null;
+        }
+
+        const hasData = data.labels.length > 0 && data.data.length > 0;
+        elements.chartEmptyState.classList.toggle('hidden', hasData);
+
+        if (!hasData) {
+            updateZoomControls(true);
+            return;
         }
 
         const ctx = elements.chartContainer.getContext('2d');
         const isRaw = state.currentAggregation === 'raw';
         const unit = isRaw ? 'W' : 'kWh';
         const isLineChart = isRaw;
-        const hasData = data.labels.length > 0 && data.data.length > 0;
 
+        const colors = getChartColors();
         const datasets = [];
 
         // Main data (import / consumption)
@@ -143,8 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
             label: isRaw ? 'Power' : 'Import',
             type: isLineChart ? 'line' : 'bar',
             data: data.data,
-            backgroundColor: 'rgba(0, 212, 170, 0.6)',
-            borderColor: '#00d4aa',
+            backgroundColor: hexToRgba(colors.copper, 0.6),
+            borderColor: colors.copper,
             borderWidth: 2,
             ...(isLineChart && {
                 pointRadius: 0,
@@ -161,8 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 label: 'Export',
                 type: 'bar',
                 data: data.export_data,
-                backgroundColor: 'rgba(255, 193, 7, 0.6)',
-                borderColor: '#ffc107',
+                backgroundColor: hexToRgba(colors.slateBlue, 0.6),
+                borderColor: colors.slateBlue,
                 borderWidth: 2,
                 order: 2
             });
@@ -174,14 +206,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 label: 'Forecast',
                 type: 'line',
                 data: data.forecast,
-                backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                borderColor: '#ffc107',
+                backgroundColor: hexToRgba(colors.gold, 0.2),
+                borderColor: colors.gold,
                 borderWidth: 2,
                 borderDash: [8, 4],
                 pointRadius: 3,
                 pointHoverRadius: 5,
-                pointBackgroundColor: '#ffc107',
-                pointBorderColor: '#ffc107',
+                pointBackgroundColor: colors.gold,
+                pointBorderColor: colors.gold,
                 tension: 0.4,
                 fill: true,
                 order: 3
@@ -201,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 label: averageNames[state.currentAggregation],
                 type: 'line',
                 data: data.moving_average,
-                borderColor: '#ff6b6b',
+                borderColor: colors.current,
                 borderWidth: 2,
                 pointRadius: 0,
                 pointHoverRadius: 4,
@@ -217,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 label: 'Average Pattern',
                 type: 'line',
                 data: data.daily_average_pattern,
-                borderColor: '#ffa500',
+                borderColor: colors.current,
                 borderWidth: 2,
                 pointRadius: 0,
                 pointHoverRadius: 4,
@@ -244,8 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     legend: {
                         position: 'top',
                         labels: {
-                            color: '#94a3b8',
+                            color: colors.paperDim,
                             font: {
+                                family: "'IBM Plex Mono', ui-monospace, monospace",
                                 size: 12
                             },
                             padding: 16,
@@ -253,16 +286,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                        borderColor: '#00d4aa',
+                        backgroundColor: hexToRgba(colors.ink, 0.92),
+                        borderColor: colors.copper,
                         borderWidth: 1,
-                        titleColor: '#fff',
+                        titleColor: '#f4ecdf',
                         titleFont: {
+                            family: "'IBM Plex Mono', ui-monospace, monospace",
                             size: 13,
                             weight: 600
                         },
-                        bodyColor: '#fff',
+                        bodyColor: '#f4ecdf',
                         bodyFont: {
+                            family: "'IBM Plex Mono', ui-monospace, monospace",
                             size: 13
                         },
                         padding: 12,
@@ -288,8 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             },
                             drag: {
                                 enabled: true,
-                                backgroundColor: 'rgba(0, 212, 170, 0.2)',
-                                borderColor: '#00d4aa',
+                                backgroundColor: hexToRgba(colors.copper, 0.2),
+                                borderColor: colors.copper,
                                 borderWidth: 1
                             },
                             mode: 'x'
@@ -306,8 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#94a3b8',
+                            color: colors.paperDim,
                             font: {
+                                family: "'IBM Plex Mono', ui-monospace, monospace",
                                 size: 11
                             },
                             maxRotation: data.labels.length > 50 ? 45 : 0,
@@ -315,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             autoSkipPadding: 10
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.05)',
+                            color: cssVar('--line'),
                             drawBorder: false
                         }
                     },
@@ -323,14 +359,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: {
                             display: true,
                             text: unit,
-                            color: '#94a3b8',
+                            color: colors.paperDim,
                             font: {
                                 size: 12
                             }
                         },
                         ticks: {
-                            color: '#94a3b8',
+                            color: colors.paperDim,
                             font: {
+                                family: "'IBM Plex Mono', ui-monospace, monospace",
                                 size: 11
                             },
                             callback: function(value) {
@@ -338,14 +375,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.05)',
+                            color: cssVar('--line'),
                             drawBorder: false
                         }
                     }
                 }
             }
         });
-        updateZoomControls(!hasData);
+        updateZoomControls(false);
     }
 
     // Update Chart Data
