@@ -23,7 +23,7 @@ readings without manual file handling.
 
 <p align="center">
   <img src="assets/screenshot.png" width="100%" alt="SMA Energy Tracker Dashboard">
-  <br><em>Live dashboard polling the Smart Meter Adapter via REST</em>
+  <br><em>Monthly view with import/export tracking, 5-point average, and forecast</em>
 </p>
 
 ## Features
