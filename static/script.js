@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function panChart(delta) {
         if (!state.chart) return;
-        state.chart.pan({x: delta}, undefined, 'default');
+        state.chart.pan({x: delta}, undefined, 'none');
     }
 
     function resetZoom() {
