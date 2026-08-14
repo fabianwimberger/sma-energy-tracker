@@ -1,11 +1,11 @@
 # Core dependencies
 fastapi==0.141.1
-uvicorn[standard]==0.52.1
+uvicorn[standard]==0.52.3
 pydantic==2.13.3
 
 # Database (Async)
 aiosqlite==0.22.1
-sqlalchemy==2.0.51
+sqlalchemy==2.0.52
 
 # HTTP client for SMA API
 httpx==0.28.1
