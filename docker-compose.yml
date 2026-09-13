@@ -10,7 +10,7 @@ services:
     environment:
       TZ: ${TZ:-Europe/Vienna}
       DATA_DIR: /app/data
-      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
       SMA_HOST: ${SMA_HOST}
       SMA_TOKEN: ${SMA_TOKEN}
       SMA_USE_HTTPS: ${SMA_USE_HTTPS:-true}
