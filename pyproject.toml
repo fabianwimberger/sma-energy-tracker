@@ -44,6 +44,7 @@ source = ["."]
 omit = ["*/tests/*", "download_vendors.py"]
 
 [tool.coverage.report]
+fail_under = 75
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
