@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from db_init import init_database
 from sma_client import SmaApiClient
 from sma_poller import SmaPoller
+from version import __version__
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SMA Energy Tracker",
     description="Web application for visualizing Smart Meter Adapter data.",
-    version="1.2.0",
+    version=__version__,
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
