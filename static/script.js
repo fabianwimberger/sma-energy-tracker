@@ -108,16 +108,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showSmaError(message) {
-        elements.smaError.innerHTML = `
-            <div class="status-message error">
-                <span class="status-icon">✗</span>
-                <span>${message}</span>
-            </div>
-        `;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'status-message error';
+
+        const icon = document.createElement('span');
+        icon.className = 'status-icon';
+        icon.textContent = '✗';
+
+        const text = document.createElement('span');
+        text.textContent = message;
+
+        wrapper.append(icon, text);
+        elements.smaError.replaceChildren(wrapper);
     }
 
     function clearSmaError() {
-        elements.smaError.innerHTML = '';
+        elements.smaError.replaceChildren();
     }
 
     function updateZoomControls(disabled) {
