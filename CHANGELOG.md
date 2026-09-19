@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.4.1] - 2026-09-19
+
+Sanitizes SMA error rendering, tightens the default CORS origin, single-sources the version, and hardens vendor downloads.
+
+### Fixes
+
+- Sanitize SMA error output before rendering it, so device-supplied text cannot inject markup into the UI
+- Align the default CORS origin with the dashboard's own origin instead of allowing any origin
+- Derive the version reported by the app from a single `version.py`, removing drift between the API metadata and `pyproject.toml`
+- Verify the SHA-256 hash of every downloaded vendor asset and pin the expected version
+
+### CI
+
+- Enforce the coverage threshold
+
+### Dependencies
+
+- Bump ruff from 0.16.3 to 0.16.7
+- Bump mypy from 2.3.0 to 2.3.1
+- Bump uvicorn from 0.52.3 to 0.52.4
+- Bump pydantic from 2.13.3 to 2.13.5
+
+### Documentation & Links
+
+- [README](https://github.com/fabianwimberger/sma-energy-tracker#readme)
+- [Container image](https://github.com/fabianwimberger/sma-energy-tracker/pkgs/container/sma-energy-tracker)
+
 ## [v1.4.0] - 2026-08-14
 
 Python 3.14 base image plus routine backend dependency updates.
